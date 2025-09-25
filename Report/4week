@@ -1,0 +1,17 @@
+다른 언어들에서는 0이 false이지만 Assembly에서는true이다.
+Literal =valuse
+이진수를 허용하는 언어가있고 아닌게 있으니 체크
+MOD 는 %기호이다
+정수와 정수의 연산은 정수로 출력
+문자열의 제일 끝에는 NULL string이 존재함(c언어도 마찬가지)
+어셈블리에서 @는 특별한 기능을 가지고 있기때문에 충돌되서 지워지지않게 조심해야함
+모든 함수들은 메모리나 stack을 사용한다
+code 및 data Segment 존재해야함(.data  .code  .stack 100h)
+code label은 jmp할때 사용됨
+
+add eax, 6
+(instruction operand(destination), operand(source))
+operand = 명령어의 대상이 되는것
+
+COMMENT (문자 ex : &, !) 중 하나를적고 다시 같은 문자를 받을떄까지 주석처리
+0dh, 0ah, 는 줄바꿈이다
