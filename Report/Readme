@@ -1,1 +1,337 @@
+Q1: What will be the value in EDX after executing (a) and (b)?
+mov edx,21348041h
+movsx edx,one   ; (a)
+movsx edx,two   ; (b)
 
+
+Answer:
+(a) EDX = FFFF8002h
+(b) EDX = 00004321h
+Reason: movsx sign-extends a 16-bit value to 32-bit. one = 8002h is negative; two = 4321h is positive.
+
+Q2: What will be the value in EAX after executing:
+mov eax,1002FFFFh
+inc ax
+
+
+Answer: EAX = 10020000h
+Reason: AX = FFFFh → inc → 0000h; upper 16 bits of EAX unchanged.
+
+Q3: What will be the value in EAX after executing:
+mov eax,30020000h
+dec ax
+
+
+Answer: EAX = 3002FFFFh
+Reason: AX = 0000h → dec → FFFFh; upper 16 bits unchanged.
+
+Q4: What will be the value in EAX after executing:
+mov eax,1002FFFFh
+neg ax
+
+
+Answer: EAX = 10020001h
+Reason: AX = FFFFh → neg → 0001h; sign/zero extended; upper 16 bits unchanged.
+
+Q5: What will be the value of the Parity Flag (PF) after:
+mov al,1
+add al,3
+
+
+Answer: PF = 0
+Reason: AL = 4 → 00000100b → odd number of 1 bits → PF = 0.
+
+Q6: What will be the value of EAX and the Sign Flag (SF) after:
+mov eax,5
+sub eax,6
+
+
+Answer: EAX = FFFFFFFFh, SF = 1
+Reason: 5 - 6 = -1 → negative → SF = 1.
+
+Q7: How does the Overflow Flag (OF) indicate whether a signed byte in AL is within the valid range?
+mov al,-1
+add al,130
+
+
+Answer: OF does not reliably indicate validity.
+Reason: Adding 130 to -1 results in AL = 81h; OF only signals signed overflow, but value may still be valid signed byte.
+
+Q8: What will RAX contain after:
+mov rax,44445555h
+
+
+Answer: RAX = 0000000044445555h
+Reason: 32-bit immediate value zero-extended to 64-bit register.
+
+Q9: What will RAX contain after:
+mov rax,0FFFFFFFF00000000h
+mov rax,dwordVal
+
+
+Answer: RAX = 0000000084326732h
+Reason: mov 32-bit dwordVal → RAX zero-extends upper 32 bits.
+
+Q10: What will EAX contain after:
+mov ax,3
+mov WORD PTR dVal+2,ax
+mov eax,dVal
+
+
+Answer: EAX = 00033412h
+Reason: Writing AX to high word of dVal modifies upper 16 bits of DWORD.
+
+Q11: What will EAX contain after:
+mov dVal,12345678h
+mov ax,WORD PTR dVal+2
+add ax,3
+mov WORD PTR dVal,ax
+mov eax,dVal
+
+
+Answer: EAX = 12375678h
+Reason: High WORD modified by ax + 3.
+
+Q12: Is it possible to set the Overflow Flag if you add a positive integer to a negative integer?
+
+Answer: No
+Reason: Adding opposite signs cannot cause signed overflow.
+
+Q13: Will the Overflow Flag be set if you add a negative integer to a negative integer and produce a positive result?
+
+Answer: Yes
+Reason: Two negatives producing a positive exceeds signed range → OF = 1.
+
+Q14: Is it possible for the NEG instruction to set the Overflow Flag?
+
+Answer: Yes
+Reason: Negating the minimum signed value (e.g., 0x80) causes overflow.
+
+Q15: Is it possible for both the Sign Flag and Zero Flag to be set at the same time?
+
+Answer: No
+Reason: Zero result implies sign bit = 0 → SF and ZF cannot both be 1.
+
+Q16: For each of the following instructions, state whether it is valid or invalid.
+
+Data:
+
+var1 SBYTE -4,-2,3,1
+var2 WORD 1000h,2000h,3000h,4000h
+var3 SWORD -16,-42
+var4 DWORD 1,2,3,4,5
+
+Instruction	Answer	Reason
+mov ax,var1	Invalid	var1 is BYTE array; AX is 16-bit register (size mismatch).
+mov ax,var2	Valid	var2 first WORD (1000h) fits into AX.
+mov eax,var3	Invalid	var3 is 16-bit; EAX is 32-bit (size mismatch).
+mov var2,var3	Invalid	Memory-to-memory move is not allowed.
+movzx ax,var2	Invalid	movzx requires destination to be larger register; AX same size as source.
+movzx var2,al	Invalid	movzx cannot use memory as destination.
+mov ds,ax	Valid	Loading 16-bit segment register from AX is allowed.
+mov ds,1000h	Invalid	Immediate value cannot be moved directly to segment register.
+Q17: What will be the hexadecimal value of the destination operand after these instructions?
+mov al,var1
+mov ah,[var1+3]
+
+
+Answer:
+(a) AL = 0xFC
+(b) AX = 0x01FC
+
+Reason: var1 bytes = FC FE 03 01h → AL gets first byte, AH gets fourth byte.
+
+Q18: What will be the value of the destination operand after these instructions?
+mov ax,var2
+mov ax,[var2+4]
+mov ax,var3
+mov ax,[var3-2]
+
+
+Answer:
+(a) AX = 0x1000
+(b) AX = 0x3000
+(c) AX = 0xFFF0 (-16)
+(d) AX = 0x4000
+
+Reason: Indexed addressing reads words at specified offsets; results as above.
+
+Q19: What will be the value of the destination operand after these instructions?
+mov edx,var4
+movzx edx,var2
+mov edx,[var4+4]
+movsx edx,var1
+
+
+Answer:
+(a) EDX = 0x00000001
+(b) EDX = 0x00001000
+(c) EDX = 0x00000002
+(d) EDX = 0xFFFFFFFC (-4)
+
+Reason:
+
+mov → direct memory to register
+
+movzx → zero-extend 16-bit to 32-bit
+
+movsx → sign-extend 8-bit to 32-bit
+
+Q1: How do you convert a 32-bit number from Big Endian to Little Endian?
+
+Data:
+
+bigEndian BYTE 12h,34h,56h,78h
+littleEndian DWORD?
+
+
+Answer:
+
+mov al, bigEndian
+mov ah, bigEndian+1
+mov dl, bigEndian+2
+mov dh, bigEndian+3
+mov eax, ax        ; combine first two bytes
+shl edx, 16
+or eax, edx
+mov littleEndian, eax
+
+
+Result: littleEndian = 0x78563412
+Reason: Byte order reversed to convert from Big Endian to Little Endian.
+
+Q2: How do you exchange every pair of values in an array with an even number of elements?
+
+Answer:
+
+mov esi, offset array
+mov ecx, LENGTHOF array / 2
+loop_start:
+mov al,[esi]
+mov ah,[esi+1]
+xchg al,ah
+mov [esi],al
+mov [esi+1],ah
+add esi,2
+loop loop_start
+
+
+Result: Each consecutive pair of elements swapped.
+Reason: Loops through the array and exchanges pairs using XCHG.
+
+Q3: How do you calculate the sum of all gaps between successive array elements (doublewords)?
+
+Answer:
+
+mov esi, offset array
+mov ecx, LENGTHOF array - 1
+xor eax, eax    ; sum = 0
+loop_start:
+mov ebx,[esi]
+mov edx,[esi+4]
+sub edx, ebx
+add eax, edx
+add esi, 4
+loop loop_start
+
+
+Result: EAX contains the sum of gaps.
+Reason: Subtracts consecutive elements and accumulates the differences.
+
+Q4: How do you copy an unsigned Word array into a DWORD array?
+
+Answer:
+
+mov esi, offset wordArray
+mov edi, offset dwordArray
+mov ecx, LENGTHOF wordArray
+loop_start:
+mov ax, [esi]
+movzx eax, ax
+mov [edi], eax
+add esi,2
+add edi,4
+loop loop_start
+
+
+Result: Each 16-bit word expanded to 32-bit DWORD.
+Reason: movzx zero-extends each word to 32 bits.
+
+Q5: How do you generate the first seven Fibonacci numbers using a loop?
+
+Answer:
+
+mov eax,1  ; Fib1
+mov ebx,1  ; Fib2
+mov ecx,5  ; remaining 5 numbers
+loop_start:
+add eax,ebx
+mov ebx,eax
+loop loop_start
+
+
+Result: 1,1,2,3,5,8,13
+Reason: Each number is sum of previous two.
+
+Q6: How do you reverse the elements of an array in place?
+
+Answer:
+
+mov esi, offset array
+mov edi, offset array + SIZEOF array - TYPE array
+loop_start:
+mov al,[esi]
+mov bl,[edi]
+mov [esi],bl
+mov [edi],al
+inc esi
+dec edi
+cmp esi, edi
+jle loop_start
+
+
+Result: Array elements reversed.
+Reason: Swaps elements from start and end moving toward the center.
+
+Q7: How do you copy a string from source to target in reverse order?
+
+Data:
+
+source BYTE "This is the source string",0
+target BYTE SIZEOF source DUP('#')
+
+
+Answer:
+
+mov esi, offset source
+mov edi, offset target + SIZEOF source - 2
+loop_start:
+mov al,[esi]
+mov [edi], al
+inc esi
+dec edi
+cmp byte ptr [esi],0
+jne loop_start
+mov byte ptr [edi+1],0
+
+
+Result: target = reversed source
+Reason: Copies characters from end of target while iterating source forward.
+
+Q8: How do you rotate the elements of a 32-bit array forward one position?
+
+Answer:
+
+mov esi, offset array
+mov eax, [esi + SIZEOF array - TYPE array]  ; save last element
+mov ecx, LENGTHOF array-1
+loop_start:
+mov edx,[esi+4]  ; next element
+mov [esi], edx
+add esi,4
+loop loop_start
+mov [offset array], eax  ; put last element at first
+
+
+Result: Last element moves to first, others shift right.
+Reason: Preserves array values while rotating elements forward.
