@@ -672,7 +672,206 @@ val DWORD 12345678h
 
 Memory order (little endian): 78 56 34 12
 
+1. Which instruction pushes all 32-bit general-purpose registers on the stack?
+PUSHAD (32-bit MASM/IA-32) — EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI를 순서대로 푸시.
 
+2. Which instruction pushes the 32-bit EFLAGS register on the stack?
+PUSHFD (또는 PUSHF의 32-bit 버전)
+
+3. Which instruction pops the stack into the EFLAGS register?
+POPFD (또는 POPF의 32-bit 버전)
+
+4. Challenge — NASM permitting PUSH EAX EBX ECX: why might this be better than PUSHAD?
+
+NASM의 다중 레지스터 PUSH는 명시적으로 어떤 레지스터들만 푸시하는지 보여주므로 불필요한 레지스터(예: ESP)까지 푸시하는 PUSHAD보다 안전하고 효율적이다.
+
+PUSHAD는 항상 고정된 순서와 모든 GPR을 푸시하므로 레지스터 일부만 보존하면 될 때 불필요한 메모리/시간 낭비가 생긴다.
+
+결론: 선택적이고 최소한의 저장을 허용하므로 더 효율적이고 명확함.
+
+5. Challenge — If no PUSH existed, give two instructions to mimic push eax.
+
+sub esp, 4
+mov [esp], eax
+
+
+6. (T/F) RET pops the top of the stack into the instruction pointer.
+True. RET pops the return address from the stack and jumps to it (실제론 EIP/RIP에 값을 로드).
+
+7. (T/F) Nested procedure calls are not permitted by MASM unless the NESTED operator is used.
+False. 일반적인 중첩 호출은 추가 키워드 없이 허용된다. (NESTED는 특정 컴파일러/옵션용 문법일 뿐).
+
+8. (T/F) In protected mode, each procedure call uses a minimum of 4 bytes of stack space.
+True. CALL 명령은 리턴 주소(32-bit)를 스택에 푸시하므로 최소 4바이트 사용(32-bit 환경 기준).
+
+9. (T/F) The ESI and EDI registers cannot be used when passing 32-bit parameters to procedures.
+False. ESI/EDI도 일반 레지스터이며 파라미터 전달에 사용할 수 있다(약속(conventions)에 따라 다름).
+
+10. (T/F) The ArraySum procedure (Sec.5.2.5) receives a pointer to any array of doublewords.
+True. (책의 기술대로라면 ArraySum은 doubleword(32-bit) 배열의 포인터를 받음.)
+
+11. (T/F) The USES operator lets you name all registers that are modified within a procedure.
+True. USES에 나열한 레지스터들을 보존하기 위해 컴파일러가 함수 진입/복귀 시 PUSH/POP을 생성한다.
+
+12. (T/F) The USES operator only generates PUSH instructions, so you must code POP yourself.
+False. MASM의 USES는 자동으로 진입부에 PUSH, 복귀부에 POP을 생성한다(즉, 양쪽을 처리함).
+
+13. (T/F) The register list in the USES directive must use commas to separate register names.
+False. MASM의 USES 보통은 공백으로 구분 (USES eax ebx ecx) — (버전/문법에 따라 다를 수 있지만 일반적 관행은 공백).
+
+14. Which statement(s) in ArraySum must be modified to sum 16-bit words? Create such a version.
+
+바꿔야 할 점:
+
+인덱스 증가량(기본이 4바이트 → 2바이트)
+
+배열 엘리먼트 읽기 시 movzx/movsx로 16비트 값을 적절히 32비트로 확장
+
+누적 변수(합)는 32비트(DWORD)로 유지하는 것이 안전
+
+MASM-style pseudocode (ArraySum for WORDs):
+
+; Params: ESI -> pointer to array, ECX -> count (number of words)
+; Returns: EAX = sum (32-bit)
+ArraySumWords PROC
+    push ebp
+    mov  ebp, esp
+    push esi       ; save if needed
+    xor  eax, eax  ; sum = 0
+    xor  edx, edx  ; index offset or temp
+
+loop_start:
+    cmp  ecx, 0
+    je   loop_end
+
+    ; load word and zero-extend to dword
+    mov  dx, [esi]      ; dx = word
+    movzx edx, dx       ; edx = zero-extended word
+    add  eax, edx
+
+    add  esi, 2         ; advance by 2 bytes for WORD array
+    dec  ecx
+    jmp  loop_start
+
+loop_end:
+    pop  esi
+    mov  esp, ebp
+    pop  ebp
+    ret
+ArraySumWords ENDP
+
+
+(테스트 방법) 간단히 WORD array를 선언하고 ECX=count, ESI=OFFSET array로 호출하면 됨.
+
+15. What will be final value in EAX after:
+
+push 5
+push 6
+pop  eax
+pop  eax
+
+
+동작: pop eax → 6, 다음 pop eax → 5.
+
+최종 EAX = 5.
+
+16. Which statement is true for the code (push 10; push 20; call Ex2Sub; Ex2Sub: pop eax; ret): choices a–d?
+
+실행 시 문제: call이 리턴주소를 푸시한 뒤 Ex2Sub가 pop eax를 수행하면 리턴주소가 EAX로 들어감. 이후 ret은 스택에서 다음 값을 꺼내서 EIP로 사용(이 값은 push 20으로 넣은 20이므로 잘못된 주소로 점프) — 결국 ret에서 잘못된 점프로 런타임 에러 발생.
+
+정답: (d) The program will halt with a runtime error on Line 11 (the ret).
+
+17. Which statement is true for code with pusha / popa (mov eax,30; push eax; push 40; call Ex3Sub; Ex3Sub: pusha; mov eax,80; popa; ret)?
+
+흐름: main에서 EAX=30, push 30, push 40, call → Ex3Sub 진입 시 EAX=30. pusha는 EAX(=30)를 스택에 저장. mov eax,80으로 바꾼 뒤 popa는 pusha에 의해 저장된 레지스터들을 복원하고, EAX는 다시 30으로 돌아감. 정상 반환.
+
+정답: (c) EAX will equal 30 on line 6 (i.e. after return).
+
+18. Which statement is true for code using push offset Here then jmp Ex4Sub and Ex4Sub just ret?
+
+흐름: push offset Here는 스택에 반환주소(라벨 Here)를 넣고 jmp Ex4Sub로 이동. Ex4Sub가 ret을 실행하면 스택에서 그 주소(Here)를 꺼내어 점프 → Here 코드 실행 (mov eax,30). 따라서 mov eax,30 실행됨.
+
+정답: (a) EAX will equal 30 on line 7.
+
+19. Which statement is true for code where Ex5Sub does pop eax ... pop edx; push eax; ret and main pushed eax=40 then called Ex5Sub?
+
+시뮬레이션: main pushes 40 then call(리턴주소 푸시). Ex5Sub 첫 pop eax → 리턴주소가 eax로 들어감. 그 뒤 pop edx → 40이 edx로 들어감. push eax로 리턴주소를 다시 스택에 올려서 ret이 정상 동작. 결과: EDX = 40.
+
+정답: (a) EDX will equal 40 on line 6.
+
+20. What values will be written to array DWORD 4 DUP(0) by given nested calls?
+
+시뮬레이션 결과 (초기 eax=10, esi=0):
+
+proc_3 writes array[0] = 10
+
+proc_2 then writes array[1] = 20
+
+proc_1 then writes array[2] = 30
+
+main after returning writes array[3] = 40
+
+결과: array = {10, 20, 30, 40}
+
+Algorithm Workbench (추가 연습문제) — answers & code snippets
+
+1. Exchange EAX and EBX using only PUSH/POP.
+
+; initial: EAX = a, EBX = b
+push eax
+push ebx
+pop  eax    ; eax := b
+pop  ebx    ; ebx := a
+; now EAX=b, EBX=a
+
+
+2. Make subroutine return to an address 3 bytes higher than the current return address.
+(서브루틴의 RET 바로 전에)
+
+add dword ptr [esp], 3   ; 스택에 있는 return address에 3을 더함
+ret
+
+
+설명: [esp]는 현재 스택의 return address(32-bit) 위치.
+
+3. Reserve space for two doubleword locals and assign 1000h/2000h.
+
+; at subroutine entry
+sub esp, 8            ; 공간 8바이트(두 개의 DWORD) 확보
+mov dword ptr [esp], 0x1000
+mov dword ptr [esp+4], 0x2000
+; ... use locals ...
+add esp, 8            ; 복귀 전 원래대로
+ret
+
+
+4. Copy element in dword array to previous position (indexed addressing).
+(예: array base in EDI, index in ECX — copy element ECX to ECX-1)
+
+mov eax, dword ptr [edi + ecx*4]      ; eax := array[ecx]
+mov dword ptr [edi + ecx*4 - 4], eax  ; array[ecx-1] := eax
+
+
+또는 만약 ESI가 바이트 오프셋이면:
+
+mov eax, [array + esi]        ; 읽어오기
+mov [array + esi - 4], eax    ; 이전 슬롯에 쓰기
+
+
+5. Display a subroutine’s return address without preventing normal return.
+
+리턴 주소는 서브루틴 진입 시 [esp]에 있다(32-bit). 안전하게 복사해서 출력하고 스택은 건드리지 않으면 됨:
+
+mov  eax, [esp]      ; EAX := return address (do not POP it)
+; -- now call some display routine that uses/preserves EAX or we save it --
+push eax
+call DisplayHex     ; example: displays hex value on console
+add  esp, 4
+; continue and ret normally
+ret
+
+
+또는 레지스터에 복사한 뒤(예: mov ebx, [esp]) 출력 루틴에 전달해도 됨. 핵심은 [esp]를 pop 하지 않는 것.
 
 
 
