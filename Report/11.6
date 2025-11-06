@@ -1,0 +1,21 @@
+AND 로 연산할때 0011 1011 을 AND를 사용하면 상위 4비트는 cleared하고 하위 4비트를 가져오는방법은 0011 1011 AND 0000 1111 하면 결과는 0000 1011 이 나온다.
+AND명령 후에는 overflow나 캐리 플래그를 무조건 0으로 한다.
+
+OR은 AND와 반대
+
+XOR은 같으면 0 다르면 1. 예를 들어, 00111011 XOR 00001111 이면 00110100이다.
+
+NOT은 주소가 한개이다.
+
+TEST는 AND연산하고 같다. 단, 데스티네이션 오퍼랜드
+
+체크하라고 하신것 : stc(set Carry flag), clc(clear Carry flag) 명령어
+
+jnz : jumo not zero flag
+je : jump equal(같으면)
+jl : jump less(작으면)
+jg: jump greater(그거보다 크면)
+
+jg = jnle
+jl = jnge
+
