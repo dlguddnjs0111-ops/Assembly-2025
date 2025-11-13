@@ -1,0 +1,26 @@
+SHL, SHR : Shift left, right
+SAL, SAR : 산술 쉬프트 왼,오
+
+SHIFT란? 한비트씩 밀고 비어있는자리에 0을 넣는게 SHIFT명령어이다.
+flag register에 carry flag에 밀린게 들어간다.(7장 3p참조)
+
+arithmetic shift는 가장 앞에 있는 비트를 복사해서 더욱 앞에 붙인다.1이 최상위 비트이면1을, 0이면 0을 넣는다
+(7장 4p참조)
+
+1010 = 10 (5 x 2의 1승)
+10100 = 20(5 x 2의 2승)
+왼쪽으로 밀면 밀수록 지수가 상승한다
+
+SHLD (shift left double)는 일반 쉬프트처럼 밀고, Source따위에서 받아온다
+
+The two-operand formats truncate the product to the length of the destination. If significant dig its are
+lost, the Overflow and Carry flags are set. Be sure to check one of these flags after per forming an IMUL
+operation with two operands.
+
+DIV에서는 나눈것의 몫과 나머지가 어디에 들어가는지 정도는 알고있어야한다.
+
+AAA : 아스키 값으로 조정후에 더함
+AAS : 아스키값으로 조정후에 뺌
+AAM : 곱
+AAD : 나눔
+
