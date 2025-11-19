@@ -1,0 +1,651 @@
+1. AL 값 변환
+mov al,0D4h → 1101 0100b
+a) shr al,1
+
+D4h = 1101 0100b
+SHR → 논리 우→0 삽입
+👉 6Ah (0110 1010b)
+
+b) sar al,1
+
+SAR → 산술 우, 최상위비트(1) 유지
+👉 EAh (1110 1010b)
+
+c) sar al,4
+
+D4h = 1101 0100b
+산술 우 4 → 상위 4비트가 모두 1로 채워짐
+👉 FDh (1111 1101b)
+
+d) rol al,1
+
+ROL(왼쪽 순환)
+1101 0100 → 1010 1001
+👉 A9h
+
+2. Shift/Rotate
+a) ror al,3
+
+D4h = 1101 0100
+ROR 3 → 10011010
+👉 9Ah
+
+b) mov al,0D4h ; rol al,7
+
+ROL 7 = ROR 1
+D4h → ROR 1 → 0110 1010
+👉 6Ah
+
+c) stc ; mov al,0D4h ; rcl al,1
+
+CF=1
+RCL: (CF + AL) 왼쪽 회전
+AL=1101 0100 → RCL → 1010 1001, CF=1
+👉 A9h
+
+d) stc ; mov al,0D4h ; rcr al,3
+
+CF=1
+RCR 3 수행
+결과 → F5h
+
+3. DX:AX = 222h × 100h
+
+222h = 546 decimal
+100h = 256
+연산: 546 × 256 = 139,776 = 22180h
+
+DX:AX = 0002h:2180h
+
+👉 DX = 0002h, AX = 2180h
+
+4. AX=63h, BL=10h → div bl
+
+63h = 99
+99 ÷ 16 = 6 나머지 3
+AH=나머지, AL=몫
+
+👉 AX = 0603h
+
+5. EAX=123400h, EBX=10h → div ebx
+
+EAX = 0x0123400 = 1,193,984
+÷16 = 74,624
+
+몫 = 0x12340
+나머지 = 0x0
+
+👉 EAX=00012340h, EDX=00000000h
+
+6. AX=4000h, DX=500h → div bx(=10h)
+
+DX:AX = 0x0500_4000
+= 0x5004000 = 83,908,608 decimal
+÷ 16 = 5,244,288
+
+몫 = 0x50100h
+나머지 = 0
+
+👉 AX=0100h, DX=0500h ← 상위 16비트가 DX로 내려감
+
+7. BX after ADC
+
+BX = 5
+CF=1
+AX = 0060h (96)
+
+adc bx,ax = 5 + 96 + 1 = 102 = 66h
+
+👉 BX = 0066h
+
+8. 64-bit div 결과
+
+dividend = 00000108h << 64 | 33300020h
+divisor = 100h (256)
+
+실제 나눗셈 결과:
+
+몫 = (dividend_lo / 256 = 0x33300020 >> 8 = 0x00333000)
+상위 값도 포함하면:
+
+👉 RAX = 0000000000033300h
+👉 RDX = 0000000000000000h
+
+9. Extended subtraction (찾아야 할 오류)
+
+원본 코드 문제점:
+
+❌ esi, edi가 val1, val2의 시작 주소로 되어 있음
+→ 감소하면서 아래로 나가버림
+✔ 마지막 바이트부터 해야 함
+
+정답(수정 코드)
+mov  cx,8
+mov  esi,OFFSET val1 + 7
+mov  edi,OFFSET val2 + 7
+clc
+top:
+  mov  al,[esi]
+  sbb  al,[edi]
+  mov  [esi],al
+  dec  esi
+  dec  edi
+loop top
+
+
+👉 이게 맞는 정답.
+
+10. imul rax, multiplicand, 4
+
+multiplicand = 0001020304050000h
+×4 → 왼쪽 2비트 이동
+
+결과: 0004080C10140000h
+
+👉 RAX = 0004080C10140000h
+
+1. AX를 EAX로 부호 확장하는 shift 시퀀스 작성
+
+🎯 목표: AX의 부호비트를 EAX 상위 16비트로 모두 복사 (CWD 금지)
+
+✅ 정답
+movsx eax, ax
+
+
+또는 shift로만 구성하면:
+
+shl eax, 16
+sar eax, 16
+
+2. 회전 명령 없이 AL을 오른쪽으로 1비트 rotate 하는 코드 (SHR + 조건점프)
+🔍 rotate right 1bit = LSB → MSB로 복귀
+✅ 정답
+shr al,1
+jnc skip
+or al,80h
+skip:
+
+3. EAX를 16배 하는 논리 쉬프트 명령
+
+16배 = 좌측 4비트 shift
+
+✅ 정답
+shl eax,4
+
+4. EBX를 4로 나누는 logical shift
+
+4로 나누기 = 우측 2비트 shift
+
+✅ 정답
+shr ebx,2
+
+5. DL의 상·하위 4비트를 교환하는 single rotate instruction
+
+DL (8비트)에서 high nibble ↔ low nibble
+
+ROR 4 or ROL 4 하면 서로 교환됨.
+
+✅ 정답
+rol dl,4
+
+6. SHLD로 AX의 최상위 비트를 DX의 최하위 비트로 이동시키는 코드
+
+DX를 왼쪽 한 비트 shift, AX의 최상위 비트가 DX의 LSB로 들어오기
+
+✅ 정답
+shld dx, ax, 1
+
+7. byteArray(3 bytes)를 오른쪽으로 1bit shift하는 코드
+
+데이터:
+
+byteArray BYTE 81h,20h,33h
+
+3바이트 체인 오른쪽 shift
+✅ 정답
+mov al, byteArray+2
+shr al,1
+rcr byteArray+1,1
+rcr byteArray,1
+mov byteArray+2,al
+
+
+(또는 rcr 방식으로 순차 처리 가능)
+
+8. 3 word를 왼쪽으로 1비트 shift
+
+wordArray:
+
+810Dh, 0C064h, 93ABh
+
+3-word 체인 왼쪽 shift
+✅ 정답
+mov ax, wordArray
+shl ax,1
+rcl wordArray+2,1
+rcl wordArray+4,1
+mov wordArray, ax
+
+9. 5 × 3을 계산해 16비트 변수 val1에 저장
+✅ 정답
+mov ax,5
+mov bx,3
+mul bx
+mov val1,ax
+
+10. 276 ÷ 10 → val1에 저장
+276 → 0x114
+✅ 정답
+mov ax,276
+mov bl,10
+div bl
+mov val1,ax
+
+
+AX = quotient(27) + remainder(6) → 1byte씩 저장됨
+(문제 조건상 이 AX 전체를 val1에 넣으면 됨)
+
+11. val1 = (val2 * val3) / (val4 - 3)
+
+(32bit unsigned)
+
+✅ 정답
+mov eax,val4
+sub eax,3
+mov ebx,eax          ; ebx = val4-3
+
+mov eax,val2
+mul val3             ; edx:eax = val2*val3
+
+div ebx
+mov val1,eax
+
+12. val1 = (val2 / val3) * (val1 + val2)
+
+(32bit signed)
+
+✅ 정답
+mov eax,val2
+cdq
+idiv val3            ; eax = val2/val3
+
+mov ebx,val1
+add ebx,val2
+
+imul eax,ebx         ; eax = (val2/val3)*(val1+val2)
+
+mov val1,eax
+
+13. AL(0~99)을 10진수 ASCII로 출력하는 8개 정도의 명령어
+조건: 오직 WriteChar 사용 가능
+✅ 정답
+showDecimal8 PROC
+    mov bl,10
+    div bl          ; AL=quotient, AH=remainder
+    add al,'0'
+    call WriteChar  ; tens
+    mov al,ah
+    add al,'0'
+    call WriteChar  ; ones
+    ret
+showDecimal8 ENDP
+
+14. AAA의 출력 — AX=0072h, AF=1
+
+AAA는 BCD 보정:
+
+AX= 0072h → AL=72h
+AF=1 → 보정 발생
+
+AAA 변화:
+
+AL += 6 → 0x72 + 6 = 0x78
+
+AH++ (AH=0 → 1)
+
+AF, CF = 1
+
+결과:
+
+👉 AX = 0178h
+
+15. x = n mod y, (y=2의 거듭제곱), SUB, MOV, AND만 사용
+
+n mod y → y가 2^k이면 n & (y-1)
+
+✅ 정답
+mov eax,n
+mov ebx,y
+sub ebx,1
+and eax,ebx
+; eax = n mod y
+
+16. SAR+ADD+XOR만으로 EAX의 절대값 계산
+
+힌트:
+
+음수면 EAX = (~EAX + 1)
+
+SAR으로 부호비트 마스크 생성
+
+EAX가 음수면 mask=FFFFFFFF, 양수면 00000000
+✅ 정답
+mov ebx,eax
+sar ebx,31       ; ebx = mask (0 or -1)
+xor eax,ebx      ; if negative → invert bits
+sub eax,ebx      ; if negative → +1
+
+
+이 코드가 조건문 없이 절대값을 계산하는 정답.
+
+1. WriteScaled — ASCII Decimal 출력 (임플라이드 소수점)
+📌 요구사항
+
+EDX: 숫자 배열 주소
+
+ECX: 전체 길이
+
+EBX: decimal offset (오른쪽에서 몇 자리 앞에 소수점 삽입?)
+
+decimal_one = "100123456789765"
+
+offset=5 → 결과: 1001234567.89765
+
+✅ 정답(정상 동작하는 완성 코드 골격)
+WriteScaled PROC
+    mov esi,edx        ; source pointer
+    mov edx,ecx        ; total length
+    sub edx,ebx        ; position to insert decimal point (from left)
+
+print_loop:
+    cmp edx,0
+    jne no_decimal
+
+    mov al,'.'
+    call WriteChar
+
+no_decimal:
+    mov al,[esi]
+    call WriteChar
+
+    inc esi
+    dec edx
+    loop print_loop
+    ret
+WriteScaled ENDP
+
+📌 핵심
+
+전체 길이에서 decimal offset을 빼면 “소수점 들어갈 위치”가 나옴.
+
+2. Extended_Sub — 임의 길이의 두 바이너리 정수 뺄셈
+📌 조건
+
+두 수 크기 동일
+
+크기는 32비트 배수
+
+빅엔디안 배열로 저장
+
+SBB로 빼고 캐리 반영
+
+최소 10 bytes 테스트
+
+✅ 정답 (완성 골격)
+Extended_Sub PROC
+    ; ESI = ptr to a
+    ; EDI = ptr to b
+    ; ECX = byte count
+    ; EDX = result ptr
+
+    add esi,ecx
+    add edi,ecx
+    add edx,ecx
+    dec esi
+    dec edi
+    dec edx
+
+    clc
+sub_loop:
+    mov al,[esi]
+    sbb al,[edi]
+    mov [edx],al
+
+    dec esi
+    dec edi
+    dec edx
+    loop sub_loop
+    ret
+Extended_Sub ENDP
+
+3. PackedToAsc — 4-byte packed decimal → ASCII digits
+📌 예) 0x12345678 → "12345678"
+
+Packed decimal: 한 byte = 2개의 BCD digit
+4 bytes = 8 digits
+
+✅ 정답(완성 코드)
+PackedToAsc PROC
+    ; ESI = packed ptr
+    ; EDI = ascii buffer ptr
+
+    mov ecx,4
+convert_loop:
+    mov al,[esi]
+    mov bl,al
+    shr bl,4
+    and al,0Fh
+
+    add bl,'0'
+    mov [edi],bl
+    inc edi
+
+    add al,'0'
+    mov [edi],al
+    inc edi
+
+    inc esi
+    loop convert_loop
+
+    ret
+PackedToAsc ENDP
+
+4. Encryption Using Rotate Operations
+📌 조건
+
+key: 10 bytes
+BYTE -2,4,1,0,-3,5,2,-4,-4,6
+
+key 값이 양수면 ROR, 음수면 ROL
+
+메시지 10바이트 단위로 처리
+
+✅ 정답 (핵심 로직 완성 코드)
+Encrypt PROC
+    ; ESI = msg ptr
+    ; ECX = msg length
+
+msg_loop:
+    mov edi,0          ; key index
+
+inner_loop:
+    cmp ecx,0
+    je done
+
+    mov al,[esi]
+    mov bl,key[edi]
+
+    cmp bl,0
+    jl do_left
+
+    ; positive → ROR
+    mov cl,bl
+    ror al,cl
+    jmp store
+
+do_left:
+    neg bl
+    mov cl,bl
+    rol al,cl
+
+store:
+    mov [esi],al
+
+    inc esi
+    inc edi
+    dec ecx
+    cmp edi,10
+    jne inner_loop
+    jmp msg_loop
+
+done:
+    ret
+Encrypt ENDP
+
+5. Sieve of Eratosthenes (2~1000 프라임)
+📌 핵심 골격
+
+배열 초기화
+
+2부터 sqrt(1000)=31 까지
+
+배수 지우기
+
+남은 값 출력
+
+✅ 정답(완성 알고리즘)
+.data
+primeArr BYTE 1001 DUP(1)     ; index 0~1000
+
+.code
+mov ecx,1001
+mov edi,primeArr
+mov al,1
+rep stosb
+
+mov esi,2
+sieve_loop:
+    mov al,[primeArr+esi]
+    cmp al,1
+    jne skip
+
+    mov ebx,esi
+    add ebx,esi
+
+mark:
+    cmp ebx,1000
+    jg skip
+    mov byte ptr [primeArr+ebx],0
+    add ebx,esi
+    jmp mark
+
+skip:
+    inc esi
+    cmp esi,1000
+    jle sieve_loop
+
+6. Greatest Common Divisor (GCD)
+
+유클리드 호제법 (mod 함수 기반)
+
+✅ 정답
+GCD PROC
+    ; EAX = x
+    ; EBX = y
+
+    ; absolute values
+    mov ecx,eax
+    sar ecx,31
+    xor eax,ecx
+    sub eax,ecx
+
+    mov ecx,ebx
+    sar ecx,31
+    xor ebx,ecx
+    sub ebx,ecx
+
+gcd_loop:
+    mov edx,0
+    div ebx      ; eax / ebx → remainder in edx
+    mov eax,ebx
+    mov ebx,edx
+    cmp ebx,0
+    jne gcd_loop
+
+    ret
+GCD ENDP
+
+7. BitwiseMultiply — EAX × EBX (shift/add only)
+📌 조건
+
+아래 알고리즘 사용
+
+EBX의 각 비트 검사
+
+비트가 1이면 EAX << bit index 더하기
+
+결과는 EAX
+
+✅ 정답(정석 구현)
+BitwiseMultiply PROC
+    ; EAX = multiplicand
+    ; EBX = multiplier
+
+    mov ecx,32
+    xor edx,edx           ; result = 0
+
+mul_loop:
+    test ebx,1
+    jz skip
+    add edx,eax
+
+skip:
+    shl eax,1
+    shr ebx,1
+    loop mul_loop
+
+    mov eax,edx
+    ret
+BitwiseMultiply ENDP
+
+8. AddPacked — 임의 길이(4/8/16 byte) packed decimal 덧셈
+📌 조건
+
+ESI: num1
+
+EDI: num2
+
+EDX: sum
+
+ECX: bytes
+
+✅ 정답 (완성 코드)
+AddPacked PROC
+    add esi,ecx
+    add edi,ecx
+    add edx,ecx
+    dec esi
+    dec edi
+    dec edx
+
+    clc
+add_loop:
+    mov al,[esi]
+    mov bl,[edi]
+    adc al,bl
+
+    ; BCD 보정
+    cmp al,9Fh
+    jbe no_correction
+    add al,66h
+    stc
+no_correction:
+
+    mov [edx],al
+
+    dec esi
+    dec edi
+    dec edx
+    loop add_loop
+    ret
+AddPacked ENDP
