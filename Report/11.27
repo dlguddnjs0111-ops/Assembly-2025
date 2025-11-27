@@ -1,0 +1,9 @@
+movsb : byte 단위를 옮김
+
+CLD : clear Direction flag (low)
+STD : set Dirtecion flag (high)
+
+CMPSB : Compare bytes
+CMPSW : words
+CMPSD : double words
+
