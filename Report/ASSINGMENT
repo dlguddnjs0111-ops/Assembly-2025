@@ -1,0 +1,226 @@
+1. ASM + C
+1. MSVC(Visual Studio) 스타일 인라인 어셈블리 예제
+#include <stdio.h>
+
+int add2(int x) {
+    __asm {
+        mov eax, x   ; eax 레지스터에 매개변수 x 값 로드
+        add eax, 2   ; eax = eax + 2
+        mov x, eax   ; 결과를 다시 x에 저장
+    }
+    return x;        ; x(= eax + 2) 반환
+}
+
+int main(void) {
+    int a = 10;
+    int b = add2(a);   // 10 + 2 = 12
+
+    printf("a = %d, add2(a) = %d\n", a, b);
+    return 0;
+}
+
+ GCC 스타일 인라인 어셈블리 예제
+
+리눅스 + gcc 환경이면 보통 이렇게 씀:
+
+#include <stdio.h>
+
+int add2(int x) {
+    int result;
+    __asm__ (
+        "movl %1, %%eax\n\t"  // eax = x
+        "addl $2, %%eax\n\t"  // eax = eax + 2
+        "movl %%eax, %0\n\t"  // result = eax
+        : "=r"(result)        // 출력 피연산자
+        : "r"(x)              // 입력 피연산자
+        : "%eax"              // 사용(변경)한 레지스터
+    );
+    return result;
+}
+
+int main(void) {
+    int a = 10;
+    int b = add2(a);
+    printf("a = %d, add2(a) = %d\n", a, b);
+    return 0;
+}
+
+2. 라이브러리
+
+✅ Windows (MSVC + MASM) 기준: C + ASM 라이브러리 만들기 (.lib)
+📁 프로젝트 구조 예시
+MyLib/
+ ├─ add2.c
+ ├─ add2.asm
+ └─ Makefile (선택)
+
+1) add2.c
+// add2.c
+int add2(int x);   // 어셈블리 함수 선언
+
+int add2_with_caller(int x) {
+    return add2(x);   // ASM 함수 호출
+}
+
+2) add2.asm (MASM x86)
+; add2.asm
+; int add2(int x);
+
+.386
+.model flat, c
+public add2
+
+.code
+add2 PROC
+    mov eax, [esp+4]    ; 파라미터 x
+    add eax, 2
+    ret
+add2 ENDP
+
+END
+
+3) 라이브러리 만들기 명령어
+
+Visual Studio Developer Command Prompt에서:
+
+ml /c /coff add2.asm
+cl /c add2.c
+lib /OUT:MyLib.lib add2.obj add2.obj
+
+
+완성: MyLib.lib
+
+4) 사용 예 (main.c)
+#include <stdio.h>
+
+int add2_with_caller(int x);
+
+int main() {
+    printf("%d\n", add2_with_caller(10));  // 12 출력
+    return 0;
+}
+
+
+빌드:
+
+cl main.c MyLib.lib
+
+✅ Linux (GCC + GAS) 기준: C + ASM 라이브러리(.a) 만들기
+📁 구조
+MyLib/
+ ├─ add2.c
+ ├─ add2.s
+
+1) add2.c
+// add2.c
+int add2(int x);  // ASM 함수 선언
+
+int add2_with_caller(int x) {
+    return add2(x);
+}
+
+2) add2.s (AT&T GAS 문법)
+.global add2
+add2:
+    movl 4(%esp), %eax
+    addl $2, %eax
+    ret
+
+3) 오브젝트 만들기
+gcc -c add2.c
+gcc -c add2.s
+
+4) 정적 라이브러리 생성
+ar rcs libmylib.a add2.o add2.o
+
+5) 사용(main.c)
+#include <stdio.h>
+
+int add2_with_caller(int x);
+
+int main() {
+    printf("%d\n", add2_with_caller(10));
+    return 0;
+}
+
+
+빌드:
+
+gcc main.c -L. -lmylib
+
+3. DDL
+
+✅ C + ASM DLL 만들기 (Windows, MSVC + MASM, x86)
+📁 폴더 구조
+MyDLL/
+ ├─ mydll.c
+ ├─ add2.asm
+ ├─ mydll.def   (선택)
+ └─ main.c      (테스트용)
+
+1) C 코드 — mydll.c
+// mydll.c
+__declspec(dllexport) int add2(int x);   // ASM 함수 선언 (export)
+
+__declspec(dllexport) int add2_with_caller(int x) {
+    return add2(x);   // ASM 함수 호출
+}
+
+2) ASM 코드 — add2.asm (MASM)
+; add2.asm
+; int add2(int x);
+
+.386
+.model flat, stdcall      ; DLL에서는 stdcall을 많이 사용함
+option casemap:none
+
+public add2
+
+.code
+add2 PROC x:DWORD
+    mov eax, x
+    add eax, 2
+    ret
+add2 ENDP
+
+END
+
+3) .def 파일(선택) — mydll.def
+LIBRARY "MyDLL"
+EXPORTS
+    add2
+    add2_with_caller
+
+
+.def 파일 없이도 __declspec(dllexport)면 자동 export됨.
+
+4) DLL 빌드 명령어
+
+Visual Studio Developer Command Prompt에서:
+
+ml /c /coff add2.asm
+cl /c mydll.c
+
+link /DLL /OUT:MyDLL.dll mydll.obj add2.obj /DEF:mydll.def
+
+
+생성되는 파일:
+
+MyDLL.dll ← 실제 DLL
+
+MyDLL.lib ← import library (다른 C 프로젝트에서 사용)
+
+MyDLL.exp ← export 정보
+
+5) DLL 사용 예제 — main.c
+#include <stdio.h>
+
+__declspec(dllimport) int add2_with_caller(int x);
+
+int main() {
+    printf("Result: %d\n", add2_with_caller(10)); // 12
+    return 0;
+}
+
+6) 실행 파일 빌드
+cl main.c MyDLL.lib
