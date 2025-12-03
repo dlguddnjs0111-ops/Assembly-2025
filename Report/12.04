@@ -1,0 +1,179 @@
+1) What is meant by the term input validation?
+
+👉 정답: Checking input data to ensure it is acceptable before the program uses it.
+
+2) What is defensive programming?
+
+👉 정답: Writing code that anticipates and safely handles invalid, unexpected, or malicious input.
+
+3) How will input validation help you avoid unintentional errors?
+
+👉 정답: It prevents invalid data from entering the program, reducing crashes and unexpected behavior.
+
+4) How will input validation help you avoid malicious input?
+
+👉 정답: It filters out harmful input that could exploit the program or cause security issues.
+
+5) What is reasonableness check?
+
+👉 정답: A test to see if the input value makes sense and falls within a logical range.
+
+6) What is a check digit? How is a check digit used to detect data entry errors?
+
+👉 정답: A digit added to the end of a number used to verify correctness by performing a mathematical check.
+
+7) Name three types of unintentional input errors.
+
+👉 정답: Typos, transposition errors, and omissions.
+
+8) What is a transposition error? Give an example.
+
+👉 정답: Reversing the order of digits or characters (e.g., typing 42 as 24).
+
+9) What is a duplication error? Give an example.
+
+👉 정답: Accidentally repeating a character or digit (e.g., typing 455 instead of 45).
+
+10) How can prompt messages help prevent input errors?
+
+👉 정답: By clearly explaining what type of input is expected.
+
+11) Name three preventative measures public interface designers use to reduce input errors.
+
+👉 정답: Dropdown menus, input masks, and confirmation messages.
+
+12) What is GUI spam?
+
+👉 정답: Creating excessive or unnecessary windows, messages, or interactions that annoy or confuse users.
+
+1. Which Direction flag setting causes index registers to move backward through memory when executing string primitives?
+
+➡ 정답: DF = 1 (SETD)
+
+2. When a repeat prefix is used with STOSW, what value is added to or subtracted from the index register?
+
+➡ 정답: ±2 (DF=0이면 +2, DF=1이면 −2)
+
+3. In what way is the CMPS instruction ambiguous?
+
+➡ 정답: It does not specify how many elements to compare; it compares elements and updates flags but does not tell if the arrays are equal or which is larger unless combined with REP prefixes.
+
+4. When the Direction flag is clear and SCASB has found a matching character, where does EDI point?
+
+➡ 정답: The position after the matching character.
+
+5. When scanning an array for the first occurrence of a particular character, which repeat prefix would be best?
+
+➡ 정답: REPNE (or REPNZ)
+
+6. What Direction flag setting is used in the Str_trim procedure from Section 9.3?
+
+➡ 정답: DF = 0 (CLD)
+(항상 앞으로 진행)
+
+7. Why does the Str_trim procedure from Section 9.3 use the JNE instruction?
+
+➡ 정답: To loop until a non-matching character is found.
+
+8. What happens in the Str_ucase procedure from Section 9.3 if the target string contains a digit?
+
+➡ 정답: It is unchanged (the ASCII test passes it through).
+
+9. If the Str_length procedure from Section 9.3 used SCASB, which repeat prefix would be most appropriate?
+
+➡ 정답: REPNE (scan until null terminator)
+
+10. If the Str_length procedure from Section 9.3 used SCASB, how would it calculate and return the string length?
+
+➡ 정답:
+EDI ends on the null byte → length = (EDI − start address − 1)
+
+11. What is the maximum number of comparisons needed by the binary search algorithm when an array contains 1,024 elements?
+
+➡ 정답:
+log₂(1024) = 10 comparisons
+
+12. In the FillArray procedure (Binary Search example), why must DF be cleared with CLD?
+
+➡ 정답:
+To ensure forward movement in string operations (STOSD).
+
+13. In the BinarySearch procedure, why could the statement at label L2 be removed without affecting the outcome?
+
+➡ 정답:
+It simply repeats boundary checking already done in the loop.
+
+14. In the BinarySearch procedure, how might the statement at label L4 be eliminated?
+
+➡ 정답:
+By merging the comparison logic into the loop body or rearranging the condition so the redundant jump is unnecessary.
+
+1번 문제
+
+문제:
+When wildlife experts say that Canada's forests are under stress, they are saying that Canada's native plants and animals
+정답:
+(c) are facing threats
+
+2번 문제
+
+문제:
+Fish can live in waters from the Arctic to the Caribbean, so they can survive temperature ranges that
+정답:
+(b) would kill land animals
+
+3번 문제
+
+문제:
+Humans are not cold-blooded animals,
+정답:
+(b) whereas most reptiles are
+
+4번 문제
+
+문제:
+When a man loses support, he must look to himself,
+정답:
+(b) which may be difficult
+
+5번 문제
+
+문제:
+There are more lakes in Canada than in all other countries combined,
+정답:
+(a) and none of them is salty
+
+6번 문제
+
+문제:
+An iron ring is heated until it gets red and
+정답:
+(d) soft
+
+7번 문제
+
+문제:
+The smallest flowers in the world belong to a plant that is
+정답:
+(b) often found in water
+
+8번 문제
+
+문제:
+When she got angry, it was impossible
+정답:
+(b) to calm her down
+
+9번 문제
+
+문제:
+When aquatic plants become too abundant,
+정답:
+(c) they disturb ecosystems
+
+10번 문제
+
+문제:
+Human beings have built thousands of dams across rivers around the world
+정답:
+(c) to supply energy
